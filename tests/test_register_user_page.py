@@ -1,53 +1,39 @@
 import pytest
 
-from locators import RegUserPage
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
+from pages.UserPage import UserPage
+from data_for_test import *
 
 
 def test_title(browser):
-    browser.get(browser.url + "index.php?route=account/register")
-    assert browser.title == "Register Account"
+    UserPage(browser).open()
+    assert UserPage(browser).get_title() == "Register Account"
 
 
 def test_privacy_policy(browser):
-    browser.get(browser.url + "index.php?route=account/register")
-    wait = WebDriverWait(browser, 2)
-    browser.find_element(*RegUserPage.BUTTON_PRIVACY_POLICY).click()
-    wait.until(EC.presence_of_element_located(RegUserPage.PRIVACY_POLICY))
+    UserPage(browser).open()
+    UserPage(browser).verify_privacy_policy()
 
 
-@pytest.mark.parametrize("locator, text_danger", [(RegUserPage.FIRSTNAME,
+@pytest.mark.parametrize("locator, text_danger", [(UserPage.FIRSTNAME,
                                                    "First Name must be between 1 and 32 characters!"),
-                                                  (RegUserPage.LASTNAME,
+                                                  (UserPage.LASTNAME,
                                                    "Last Name must be between 1 and 32 characters!"),
-                                                  (RegUserPage.EMAIL,
+                                                  (UserPage.EMAIL,
                                                    "E-Mail Address does not appear to be valid!"),
-                                                  (RegUserPage.TELEPHONE,
+                                                  (UserPage.TELEPHONE,
                                                    "Telephone must be between 3 and 32 characters!"),
-                                                  (RegUserPage.PASSWORD, "Password must be between 4 and 20 characters!")],
+                                                  (UserPage.PASSWORD, "Password must be between 4 and 20 characters!")],
                          ids=["FIRSTNAME", "LASTNAME", "EMAIL", "TELEPHONE", "PASSWORD"])
 def test_text_danger(browser, locator, text_danger):
-    browser.get(browser.url + "index.php?route=account/register")
-    wait = WebDriverWait(browser, 2)
-    assert wait.until_not(EC.presence_of_element_located((locator[0], locator[1] + RegUserPage.TEXT_DANGER[1])))
-    browser.find_element(*RegUserPage.BUTTON_CONTINUE).click()
-    assert wait.until(EC.presence_of_element_located((locator[0], locator[1] + RegUserPage.TEXT_DANGER[1])))
-    assert wait.until(EC.presence_of_element_located((locator[0], locator[1] + RegUserPage.TEXT_DANGER[1]))).text == \
-           text_danger
+    UserPage(browser).open()
+    assert UserPage(browser).verify_text_danger(locator) == text_danger
 
 
-@pytest.mark.parametrize("random_username_password", [("letters", 10)], ids=["registration"], indirect=True)
-def test_success_account_created(browser, random_username_password):
-    browser.get(browser.url + "index.php?route=account/register")
-    wait = WebDriverWait(browser, 2)
-    browser.find_element(*RegUserPage.FIRSTNAME).send_keys(random_username_password)
-    browser.find_element(*RegUserPage.LASTNAME).send_keys(random_username_password)
-    browser.find_element(*RegUserPage.EMAIL).send_keys(random_username_password + "@email.ru")
-    browser.find_element(*RegUserPage.TELEPHONE).send_keys(98765432100)
-    browser.find_element(*RegUserPage.PASSWORD).send_keys(random_username_password)
-    browser.find_element(*RegUserPage.PASSWORD_CONFIRM).send_keys(random_username_password)
-    browser.find_element(*RegUserPage.CHECKBOX_PRIVACY_POLICY).click()
-    browser.find_element(*RegUserPage.BUTTON_CONTINUE).click()
-    assert wait.until(EC.presence_of_element_located(RegUserPage.ACCOUNT_CREATED)).text == \
-           "Your Account Has Been Created!"
+def test_success_account_created(browser):
+    UserPage(browser).open()
+    username = get_userdata(long=10, letters=True, digits=False, simbols=False)
+    email = get_email(long=10, letters=True, digits=False, simbols=False)
+    phone_number = get_userdata(long=10, letters=False, digits=True, simbols=False)
+    password = get_userdata(long=10, letters=True, digits=False, simbols=False)
+    UserPage(browser).registration(username, email, phone_number, password)
+    assert UserPage(browser).verify_registration() == "Your Account Has Been Created!"

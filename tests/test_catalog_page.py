@@ -1,44 +1,39 @@
 import pytest
 
-from locators import CatPage
+from pages.ProductPage import ProductPage
 
 
 def test_back_home(browser):
-    browser.get(browser.url + "desktops")
-    browser.find_element(*CatPage.BUTTON_HOME).click()
-    assert browser.title == "Your Store"
+    ProductPage(browser).open()
+    ProductPage(browser).go_home_page()
+    assert ProductPage(browser).get_title() == "Your Store"
 
 
-@pytest.mark.parametrize("locator, url_title", [(CatPage.BUTTON_LAPTOPS, "Laptops & Notebooks"),
-                                                (CatPage.BUTTON_CAMERAS, "Cameras"),
-                                                (CatPage.BUTTON_MP3, "MP3 Players")],
+@pytest.mark.parametrize("locator, url_title", [(ProductPage.BUTTON_LAPTOPS, "Laptops & Notebooks"),
+                                                (ProductPage.BUTTON_CAMERAS, "Cameras"),
+                                                (ProductPage.BUTTON_MP3, "MP3 Players")],
                          ids=["Laptops & Notebooks", "Cameras", "MP3 Players"])
 def test_title(browser, locator, url_title):
-    browser.get(browser.url + "desktops")
-    browser.find_element(*locator).click()
-    assert browser.title == url_title
+    ProductPage(browser).open()
+    ProductPage(browser).navigation_in_catalog(locator)
+    assert ProductPage(browser).get_title() == url_title
 
 
-@pytest.mark.parametrize("locator, class_name", [(CatPage.BUTTON_LIST,
-                                                  "product-layout product-list col-xs-12"),
-                                                 (CatPage.BUTTON_GRID,
-                                                  "product-layout product-grid col-lg-4 col-md-4 col-sm-6 col-xs-12")],
+@pytest.mark.parametrize("view, class_name", [("list",
+                                               "product-layout product-list col-xs-12"),
+                                              ("grid",
+                                               "product-layout product-grid col-lg-4 col-md-4 col-sm-6 col-xs-12")],
                          ids=["LIST", "GRID"])
-def test_view(browser, locator, class_name):
-    browser.get(browser.url + "desktops")
-    browser.find_element(*locator).click()
-    prod = browser.find_elements(*CatPage.PRODUCT)
-    for i in prod:
-        assert i.get_attribute("class") == class_name
+def test_view(browser, view, class_name):
+    ProductPage(browser).open()
+    ProductPage(browser).change_prod_view(view)
+    for el in ProductPage(browser).verify_prod_view():
+        assert el == class_name
 
 
-@pytest.mark.parametrize("locator", [CatPage.BUTTON_LAPTOPS, CatPage.BUTTON_CAMERAS, CatPage.BUTTON_MP3],
+@pytest.mark.parametrize("locator", [ProductPage.BUTTON_LAPTOPS, ProductPage.BUTTON_CAMERAS, ProductPage.BUTTON_MP3],
                          ids=["Laptops & Notebooks", "Cameras", "MP3 Players"])
 def test_per_product_on_page(browser, locator):
-    browser.get(browser.url + "desktops")
-    browser.find_element(*locator).click()
-    prod = browser.find_elements(*CatPage.PRODUCT)
-    count = int(browser.find_element(*CatPage.COUNT_TEXT).text.split()[5])
-    assert len(prod) == count
-
-
+    ProductPage(browser).open()
+    ProductPage(browser).navigation_in_catalog(locator)
+    assert ProductPage(browser).verify_count_prod_on_page()

@@ -1,6 +1,4 @@
 import pytest
-import random
-import string
 
 from selenium import webdriver
 
@@ -16,7 +14,7 @@ def pytest_addoption(parser):
         "--driver", action="store_true", default="D:\Mars\QA\WebDrivers", help="Directory to the webdriver"
     )
     parser.addoption(
-        "--url", action="store_true", default="http://172.26.149.246:8081/", help="Base url"
+        "--url", action="store_true", default="http://172.30.79.207:8081/", help="Base url"
     )
     parser.addoption(
         "--fullscreen", action="store_true", help="Open browser in full-screen mode"
@@ -58,26 +56,3 @@ def browser(request):
     yield _browser
 
     _browser.quit()
-
-
-@pytest.fixture
-def username():
-    return "user"
-
-
-@pytest.fixture
-def password():
-    return "bitnami"
-
-
-@pytest.fixture
-def random_username_password(request):
-    if request.param[0] == "digits":
-        random_value = ''.join(random.choice(string.digits) for x in range(request.param[1]))
-    elif request.param[0] == "letters":
-        random_value = ''.join(random.choice(string.ascii_letters) for x in range(request.param[1]))
-    elif request.param[0] == "simbols":
-        random_value = ''.join(random.choice(string.punctuation) for x in range(request.param[1]))
-    elif request.param[0] == "":
-        random_value = ""
-    return random_value
