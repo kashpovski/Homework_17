@@ -1,24 +1,17 @@
 import pytest
+import logging
+import datetime
 
 from selenium import webdriver
 
 
 def pytest_addoption(parser):
-    parser.addoption(
-        "--browser", default="chrome", help="Browser to run tests"
-    )
-    parser.addoption(
-        "--headless", action="store_true", help="Browser in headless mode"
-    )
-    parser.addoption(
-        "--driver", action="store_true", default="D:\Mars\QA\WebDrivers", help="Directory to the webdriver"
-    )
-    parser.addoption(
-        "--url", action="store_true", default="http://172.30.79.207:8081/", help="Base url"
-    )
-    parser.addoption(
-        "--fullscreen", action="store_true", help="Open browser in full-screen mode"
-    )
+    parser.addoption("--browser", default="chrome", help="Browser to run tests")
+    parser.addoption("--headless", action="store_true", help="Browser in headless mode")
+    parser.addoption("--driver", default="D:\Mars\QA\WebDrivers", help="Directory to the webdriver")
+    parser.addoption("--url", action="store_true", default="http://172.20.37.83:8081/", help="Base url")
+    parser.addoption("--fullscreen", action="store_true", help="Open browser in full-screen mode")
+    parser.addoption("--log_level", default="DEBUG", help="Set log level")
 
 
 @pytest.fixture
@@ -28,6 +21,16 @@ def browser(request):
     driver = request.config.getoption("--driver")
     url = request.config.getoption("--url")
     fullscreen = request.config.getoption("--fullscreen")
+    log_level = request.config.getoption("--log_level")
+
+    logger = logging.getLogger(request.node.name)
+    file_handler = logging.FileHandler(f"logs/{request.function.__name__}.log")
+    file_handler.setFormatter(logging.Formatter("%(asctime)s - %(name)s %(funcName)s [%(module)s] | %(levelname)s :  %(message)s"))
+    logger.addHandler(file_handler)
+    logger.setLevel(level=log_level)
+
+    start_time = datetime.datetime.now()
+    logger.info(f"===> Test started ===>")
 
     options = webdriver.ChromeOptions()
     if headless:
@@ -52,7 +55,23 @@ def browser(request):
         _browser.maximize_window()
 
     _browser.url = url
+    _browser.test_file = request.function.__name__
+    _browser.test_name = request.node.name
+    _browser.log_level = log_level
+    _browser.logger = logger
 
-    yield _browser
+    logger.info(f"Browser: {browser_name} ({_browser.session_id})")
 
-    _browser.quit()
+    def fin():
+        _browser.quit()
+        logger.info(f"<=== Test finished. {datetime.datetime.now() - start_time} <===")
+
+    request.addfinalizer(fin)
+
+    return _browser
+
+    # yield _browser
+    #
+    # logger.info(f"===/// Test finished. {datetime.datetime.now() - start_time}")
+    #
+    # _browser.quit()
