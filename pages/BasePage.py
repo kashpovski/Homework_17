@@ -23,9 +23,13 @@ class BasePage:
     def open(self, path=None):
         if path is None:
             path = self.PATH
-        self.browser.get(self.browser.url + path)
+        try:
+            self.browser.get(self.browser.url + path)
+            self.browser.logger.info(f"Opening url: {self.browser.url + path}")
+        except Exception:
+            self.browser.logger.error(f"Not opening url: {self.browser.url + path}")
+            exit(1)
         # self.logger.info(f"Opening url: {self.browser.url + path}")
-        self.browser.logger.info(f"Opening url: {self.browser.url + path}")
         return self
 
     def get_title(self):

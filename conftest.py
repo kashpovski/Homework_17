@@ -1,8 +1,10 @@
 import pytest
 import logging
 import datetime
+import json
 
 from selenium import webdriver
+from selenium.webdriver.common.desired_capabilities import DesiredCapabilities
 
 
 def pytest_addoption(parser):
@@ -22,6 +24,12 @@ def browser(request):
     url = request.config.getoption("--url")
     fullscreen = request.config.getoption("--fullscreen")
     log_level = request.config.getoption("--log_level")
+    caps = DesiredCapabilities.CHROME
+
+    caps['goog:loggingPrefs'] = {
+        'browser': 'ALL',
+        'performance': 'ALL',
+    }
 
     logger = logging.getLogger(request.node.name)
     file_handler = logging.FileHandler(f"logs/{request.function.__name__}.log")
@@ -38,7 +46,8 @@ def browser(request):
 
     if browser_name == "chrome":
         _browser = webdriver.Chrome(executable_path=driver + "\chromedriver",
-                                    options=options)
+                                    options=options,
+                                    desired_capabilities=caps)
     elif browser_name == "firefox":
         _browser = webdriver.Firefox(executable_path=driver + "\geckodriver")
     elif browser_name == "opera":
@@ -63,15 +72,25 @@ def browser(request):
     logger.info(f"Browser: {browser_name} ({_browser.session_id})")
 
     def fin():
+
+        # Логиирование производительности страницы
+        performance_logs = []
+        for line in _browser.get_log("performance"):
+            performance_logs.append(line)
+        with open(f"logs_browser/{request.function.__name__}_performance.json", "w+") as f:
+            f.write(json.dumps(performance_logs))
+
+        # Логи консоли браузера собирает WARNINGS, ERRORS
+        browser_logs = []
+        for line in _browser.get_log("browser"):
+            browser_logs.append(line)
+        with open(f"logs_browser/{request.function.__name__}_browser.json", "w+") as f:
+            f.write(json.dumps(browser_logs))
+
         _browser.quit()
+
         logger.info(f"<=== Test finished. {datetime.datetime.now() - start_time} <===")
 
     request.addfinalizer(fin)
 
     return _browser
-
-    # yield _browser
-    #
-    # logger.info(f"===/// Test finished. {datetime.datetime.now() - start_time}")
-    #
-    # _browser.quit()
